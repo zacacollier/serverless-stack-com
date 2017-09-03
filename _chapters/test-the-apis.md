@@ -86,3 +86,19 @@ And that's it for the backend! Next we are going to move on to creating the fron
   And deploy it using `serverless deploy`. But we can't see this output when we make an HTTP request to it, since the console logs are not sent in our HTTP responses. We need to check the logs to see this. Head over to your AWS Console > CloudWatch > click Logs in the sidebar > select the Log Group named `/aws/lambda/notes-app-api-prod-create` > and expand the events. This should give you an idea of the error and help you debug it.
 
   A common source of errors here is an improperly indented `serverless.yml`. Make sure to double-check the indenting in your `serverless.yml` to the one from [this chapter](https://github.com/AnomalyInnovations/serverless-stack-demo-api/blob/master/serverless.yml).
+
+- `502 Bad Gateway`
+
+  A `502` followed by the ever-cryptic `message: Internal Server Error` could be indicative of a [missing `babel-runtime` dependency](https://github.com/elastic-coders/serverless-webpack/issues/43#issuecomment-301204078) in the webpack bundle you deployed.
+  Start by configuring more detailed error-reporting: ensure you've enabled logging for API Gateway [as described here](https://kennbrodhagen.net/2016/07/23/how-to-enable-logging-for-api-gateway/), then navigate to AWS Console > CloudWatch > Logs and investigate `/aws/lambda/notes-app-api-prod-create`.
+  After that, run your `apig-test` query and see what shows up in the CloudWatch Logs. An error like this suggests that babel didn't get added to the `serverless` webpack bundle:
+  ```
+  Unable to import module 'create': Error
+  at Function.Module._resolveFilename (module.js:469:15)
+  at Function.Module._load (module.js:417:25)
+  at Module.require (module.js:497:17)
+  at require (internal/module.js:20:19)
+  ...
+  ```
+  To fix it, ensure that `babel-runtime` is listed under `dependencies` in your `package.json` - if not, install it, re-run `serverless deploy`, then retry your `apig-test` query.
+  
